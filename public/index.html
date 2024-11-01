@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO Client</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial;
+        }
+
+        #textArea {
+            width: 600px;
+            height: 400px;
+            font-size: 22px;
+        }
+        .disabled {
+            background-color: #f0f0f0;
+            color: #aaa;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="inputBox">
+    <textarea id="textArea" class="disabled" disabled></textarea>
+</div>
+
+
+<!--<button id="textButton">Apple Banana</button>-->
+
+<script>
+    // Generate a alphanumeric session ID
+    const sessionId = Math.random().toString(36)
+
+    // Connect to WebSocket server
+    const socket = io();
+
+    // Track whether the user has edit access
+    let hasEditAccess = false;
+
+    // Handle connection and initialize text field
+    socket.on('connect', () => {
+        console.log("Connected to WebSocket with sessionId:", sessionId);
+
+        socket.emit("onConnect", { sessionId: sessionId });
+
+        socket.on('textUpdate', (data) => {
+            document.getElementById('textArea').value = data.text;
+        });
+    });
+
+    const inputBox = document.getElementById("inputBox");
+
+    inputBox.addEventListener("click", () => {
+        if (document.getElementById("textArea").disabled) {
+            socket.emit("clickInsideTextArea", { sessionId: sessionId });
+        } else {
+            console.log("Attempted click on non-disabled textarea!");
+        }
+    });
+
+    // Listen for the server's response to access request
+    socket.on('accessResponse', (data) => {
+        console.log("Accept Response:", data);
+        if (data.sessionId === sessionId && data.accepted) {
+            hasEditAccess = true;
+            const textArea = document.getElementById('textArea');
+            textArea.disabled = false;
+            textArea.classList.remove('disabled');
+            textArea.focus();
+        } else {
+            alert("Access denied.");
+        }
+    });
+
+    // Handle text area input to send updates to the server
+    document.getElementById('textArea').addEventListener('input', (event) => {
+        if (hasEditAccess) {
+            const text = event.target.value;
+            socket.emit("updateText", { sessionId: sessionId, text: text });
+        }
+    });
+
+    // Handle clicks outside the text area to revoke control
+    document.addEventListener('click', (event) => {
+        const textArea = document.getElementById('textArea');
+        if (event.target !== textArea && hasEditAccess) {
+            hasEditAccess = false;
+            textArea.disabled = true;
+            textArea.classList.add('disabled');
+            socket.emit("clickOutOfInputArea", { sessionId: sessionId });
+        } else if (event.target === textArea) {
+            if (!hasEditAccess) {
+                socket.emit("clickInsideTextArea", { sessionId: sessionId });
+            }
+        }
+    });
+
+    // Handle window unload to notify the server when the client disconnects
+    window.addEventListener("beforeunload", (event) => {
+        socket.emit("closeApp", { sessionId: sessionId });
+    });
+</script>
+</body>
+</html>

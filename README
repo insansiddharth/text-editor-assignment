@@ -1,0 +1,13 @@
+Steps to run the code:
+
+1. clone the repo.
+2. on base path, run "npm i" //it will install all required package
+3. RUN the command "npm run dev". It will start server on port 3000
+4. open browser and run "localhost:3000"
+5. Open in mutiple tabs the same url "localhost:3000"
+6. if you type in one tab, other will disabled and will be enabled if it is out of focus.
+
+
+Tech stack used:
+NodeJs, Express, Socket.io
+We are serving index.html via our node server.
