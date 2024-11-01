@@ -1,5 +1,7 @@
 Steps to run the code:
 
+git checkout dev // if not already in dev
+
 1. clone the repo.
 2. on base path, run "npm i" //it will install all required package
 3. RUN the command "npm run dev". It will start server on port 3000
